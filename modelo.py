@@ -1,7 +1,12 @@
 import google.generativeai as genai
 import os
 
-genai.configure(api_key="AIzaSyDazOXqGwABHUE_k6qfLPiz9iGUQo41Y8Y")
+# Configura la API key desde variable de entorno para evitar exponerla en código.
+API_KEY = os.getenv("GEMINI_API_KEY")
+if API_KEY:
+    genai.configure(api_key=API_KEY)
+else:
+    raise RuntimeError("La variable de entorno GEMINI_API_KEY no está definida.")
 
 def list_models():
     for model in genai.list_models():

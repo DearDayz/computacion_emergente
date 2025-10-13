@@ -2,9 +2,12 @@ import os
 from flask import Flask, request, jsonify, render_template
 from google.api_core import exceptions
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import tempfile
+import time
 
-# La doc oficial importa así el genai, por lo que tuve que adaptar el resto de cosas
-from google import genai
+# Usamos la librería instalada `google-generativeai`
+import google.generativeai as genai
 
 # --- Cargar variables de entorno desde el archivo .env ---
 # Es una mejor práctica de seguridad no tener la clave API directamente en el código.
@@ -12,7 +15,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# --- Inicialización del Cliente de Gemini ---
+# --- Inicialización del Cliente/Modelo de Gemini ---
 try:
     # La clave API se lee automáticamente de la variable de entorno.
     # Asegúrate de que tu archivo .env tenga la línea: GEMINI_API_KEY="TU_CLAVE_API_AQUI"
@@ -20,14 +23,20 @@ try:
     if not api_key:
         print("Error: La variable de entorno GEMINI_API_KEY no está configurada.")
         # Asignamos None para manejar el error en las rutas
-        client = None
+        model = None
     else:
-        client = genai.Client(api_key=api_key)
-        print("Modelo de Gemini inicializado con éxito.")
+        # Configurar la librería con la API key
+        genai.configure(api_key=api_key)
+        # Puedes ajustar el modelo aquí. Mantengo el id solicitado.
+        model = genai.GenerativeModel(
+            model_name='gemini-2.5-flash',
+            system_instruction="Eres un asistente virtual amigable, útil y conciso. Responde siempre en español."
+        )
+        print("Gemini configurado e inicializado con éxito.")
 
 except Exception as e:
     print(f"Error al inicializar el cliente de Gemini: {e}")
-    client = None
+    model = None
 
 # --- Rutas de la Aplicación ---
 
@@ -39,7 +48,7 @@ def index():
 @app.route("/chatbot", methods=["POST"])
 def chatbot():
     # 1. Verificar si el modelo se inicializó correctamente
-    if not client:
+    if not model:
         respuesta = "Lo siento, el servicio de IA no está configurado correctamente. Revisa la clave API en el servidor."
         return jsonify({"respuesta": respuesta}), 500
 
@@ -52,15 +61,13 @@ def chatbot():
         return jsonify({"respuesta": "Por favor, escribe un mensaje."})
 
     try:
-        # 4. Llamada a la API de Gemini
-        system_instruction = "Eres un asistente virtual amigable, útil y conciso. Responde siempre en español."
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[f"{system_instruction}\nUsuario: {user_message}\nAsistente:"],
+        # 4. Llamada a la API de Gemini usando `google-generativeai`
+        response = model.generate_content(
+            [f"Usuario: {user_message}"]
         )
 
         # 5. Extraer el texto de la respuesta
-        respuesta = response.text.strip()
+        respuesta = (response.text or "").strip() or "No se recibió texto de respuesta."
 
     except exceptions.GoogleAPICallError as e:
         print(f"Error de la API de Gemini: {e}")
@@ -83,24 +90,22 @@ def speech_to_text():
         return jsonify({"respuesta": "No se seleccionó ningún archivo de audio."}), 400
 
     try:
-        # Guardar el archivo temporalmente
+        # Guardar el archivo temporalmente (simple y directo)
+        # Nota: mantenemos .mp3 por compatibilidad con tu lógica anterior
         temp_audio_path = "temp_audio.mp3"
         audio_file.save(temp_audio_path)
 
-        # Subir el archivo a la API de Gemini
-        myfile = client.files.upload(file=temp_audio_path)
+        # Subir el archivo a la API de Gemini (flujo sencillo)
+        uploaded = genai.upload_file(temp_audio_path)
 
-        # Crear el prompt para la transcripción
+        # Prompt para la transcripción
         prompt = "Genera una transcripción del contenido del audio."
 
-        # Llamar al modelo de Gemini para procesar el archivo
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[prompt, myfile]
-        )
+        # Generar contenido con el archivo
+        response = model.generate_content([prompt, uploaded])
 
         # Extraer la respuesta
-        respuesta = response.text.strip()
+        respuesta = (response.text or "").strip() or "No se pudo generar una transcripción."
 
     except exceptions.GoogleAPICallError as e:
         print(f"Error de la API de Gemini: {e}")
@@ -112,8 +117,11 @@ def speech_to_text():
 
     finally:
         # Eliminar el archivo temporal
-        if os.path.exists(temp_audio_path):
-            os.remove(temp_audio_path)
+        if os.path.exists("temp_audio.mp3"):
+            try:
+                os.remove("temp_audio.mp3")
+            except Exception:
+                pass
 
     return jsonify({"respuesta": respuesta})
 

@@ -2,24 +2,50 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Chatbot Flask</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatbot | Gemini</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   </head>
   <body>
-    <div id="chatbox">
-      <h2>Chatbot Flask</h2>
-      <div id="messages"></div>
-      <input id="input" type="text" placeholder="Escribe algo..." />
-      <div id="button-box">
-        <button class="record">Grabar</button>
-        <button class="stop">Detener</button>
-        <button onclick="enviar()">Enviar</button>
-      </div>
+    <div class="app">
+      <header class="app__header">
+        <div class="title">
+          <span class="dot"></span>
+          <h1>Chatbot</h1>
+        </div>
+        <div id="recording-indicator" class="recording hidden">
+          <span class="pulse"></span>
+          <span>Grabando…</span>
+        </div>
+      </header>
+
+      <main id="messages" class="chat"></main>
+
+      <footer class="composer">
+        <div class="composer__row">
+          <input id="input" type="text" placeholder="Escribe un mensaje…" />
+          <button id="send-btn" class="btn primary" onclick="enviar()">Enviar</button>
+        </div>
+        <div class="composer__row">
+          <div class="btn-group">
+            <button class="btn danger outline record" title="Iniciar grabación">
+              🎤 Grabar
+            </button>
+            <button class="btn neutral outline stop" title="Detener grabación" disabled>
+              ⏹️ Detener
+            </button>
+          </div>
+
+          <div class="btn-group">
+            <label for="audio-file" class="btn neutral outline" title="Adjuntar nota de audio">
+              📎 Adjuntar audio
+            </label>
+            <input id="audio-file" type="file" accept="audio/*" class="visually-hidden" />
+          </div>
+        </div>
+      </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
   </body>
-</html>
+  </html>

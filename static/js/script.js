@@ -1,69 +1,96 @@
-document.addEventListener("DOMContentLoaded", (event) => {
-  // Escucha la tecla 'Enter' en el campo de entrada
-  document.getElementById("input").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-      enviar();
-    }
+document.addEventListener("DOMContentLoaded", () => {
+  // Enviar con Enter
+  document.getElementById("input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") enviar();
   });
+
+  const fileInput = document.getElementById("audio-file");
+  if (fileInput) {
+    fileInput.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      displayMessage("Adjuntaste un audio. Transcribiendo…", "bot-message");
+      await enviarAudio(file);
+      e.target.value = ""; // reset input
+    });
+  }
 });
 
-const record = document.querySelector(".record");
-const stop = document.querySelector(".stop");
+const recordBtn = document.querySelector(".record");
+const stopBtn = document.querySelector(".stop");
+const indicator = document.getElementById("recording-indicator");
 
 let mediaRecorder; // Se define acá para poder usarlo en ambos eventos
 let chunks = []; // Para guardar los datos del audio
 let stream; // Para guardar el stream de audio y detenerlo luego
 
-record.onclick = () => {
-  // Revisar si el navegador soporta getUserMedia
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((audioStream) => {
-        // Guardar el stream y crear el MediaRecorder
-        stream = audioStream;
-        mediaRecorder = new MediaRecorder(stream);
+function setRecordingUI(isRecording) {
+  if (indicator) indicator.classList.toggle("hidden", !isRecording);
+  if (recordBtn) recordBtn.disabled = isRecording;
+  if (stopBtn) stopBtn.disabled = !isRecording;
+}
 
-        mediaRecorder.start();
-        console.log(mediaRecorder.state);
-        console.log("recorder started");
-        record.style.background = "red";
-        record.style.color = "black";
+if (recordBtn) {
+  recordBtn.onclick = () => {
+    // Revisar si el navegador soporta getUserMedia
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((audioStream) => {
+          // Guardar el stream y crear el MediaRecorder
+          stream = audioStream;
+          mediaRecorder = new MediaRecorder(stream);
 
-        // Guardar datos a medida que se graben?
-        mediaRecorder.ondataavailable = (e) => {
-          chunks.push(e.data);
-        };
+          mediaRecorder.start();
+          setRecordingUI(true);
 
-        // Cuando se detenga la grabación se crea el archivo y se envía
-        mediaRecorder.onstop = (e) => {
-          const audioBlob = new Blob(chunks, { type: "audio/wav" });
-          chunks = [];
-          enviarAudio(audioBlob);
+          // Guardar datos a medida que se graben
+          mediaRecorder.ondataavailable = (e) => {
+            chunks.push(e.data);
+          };
 
-          // Para dejar de usar el mic
-          if (stream) {
-            stream.getTracks().forEach((track) => track.stop());
-          }
-        };
-      })
-      .catch((err) => {
-        console.error(`The following getUserMedia error occurred: ${err}`);
-      });
-  } else {
-    console.log("getUserMedia not supported on your browser!");
-  }
-};
+          // Cuando se detenga la grabación se crea el archivo y se envía
+          mediaRecorder.onstop = async () => {
+            // Volvemos a la lógica original: crear un Blob como WAV
+            const audioBlob = new Blob(chunks, { type: "audio/wav" });
+            chunks = [];
+            await enviarAudio(audioBlob);
 
-stop.onclick = () => {
-  if (mediaRecorder && mediaRecorder.state === "recording") {
-    mediaRecorder.stop();
-    console.log(mediaRecorder.state);
-    console.log("recorder stopped");
-    record.style.background = "";
-    record.style.color = "";
-  }
-};
+            // Para dejar de usar el mic
+            if (stream) {
+              stream.getTracks().forEach((track) => track.stop());
+            }
+            setRecordingUI(false);
+          };
+        })
+        .catch((err) => {
+          console.error(`getUserMedia error: ${err}`);
+          displayMessage("No se pudo acceder al micrófono.", "bot-message");
+        });
+    } else {
+          displayMessage("Tu navegador no soporta grabación de audio.", "bot-message");
+    }
+  };
+}
+
+if (stopBtn) {
+  stopBtn.onclick = () => {
+    try {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      } else {
+        // Fallback: detener pistas si quedaron activas
+        if (stream) {
+          stream.getTracks().forEach((t) => t.stop());
+        }
+        setRecordingUI(false);
+      }
+    } catch (e) {
+      console.error(e);
+      setRecordingUI(false);
+    }
+  };
+}
 
 function enviar() {
   const inputField = document.getElementById("input");
@@ -102,53 +129,43 @@ function enviar() {
   inputField.value = "";
 }
 
-async function enviarAudio(audioBlob) {
+async function enviarAudio(audioBlobOrFile) {
   const formData = new FormData();
-  formData.append("audio", audioBlob);
-  
-  // Transcribimos el audio
-  const response = await fetch("/speech-to-text", {
-    method: "POST",
-    body: formData,
-  })
-  .catch((error) => {
-      console.error("Error al enviar el mensaje:", error);
-      displayMessage(
-        "Error: No se pudo conectar con el servidor.",
-        "bot-message"
-      );
-  });
-  const data = await response.json();
-  const userMessage = data.respuesta;
-
-  if (userMessage === "") {
-    return; // No enviar si el mensaje está vacío
+  // Volvemos a la lógica original: si es Blob (grabación), no forzar filename
+  if (audioBlobOrFile instanceof File) {
+    formData.append("audio", audioBlobOrFile, audioBlobOrFile.name);
+  } else {
+    formData.append("audio", audioBlobOrFile);
   }
 
-
-  // Mostrar la transcripción como mensaje del usuario
-  displayMessage(data.respuesta, "user-message");
-  
-  // Enviar mensaje igual que en enviar()
-  fetch("/chatbot", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ mensaje: userMessage }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      // 3. Mostrar la respuesta del bot
-      displayMessage(data.respuesta, "bot-message");
-    })
-    .catch((error) => {
-      console.error("Error al enviar el mensaje:", error);
-      displayMessage(
-        "Error: No se pudo conectar con el servidor.",
-        "bot-message"
-      );
+  try {
+    const response = await fetch("/speech-to-text", {
+      method: "POST",
+      body: formData,
     });
+    const data = await response.json();
+    const userMessage = (data.respuesta || "").trim();
+
+    if (!userMessage) {
+      displayMessage("No se obtuvo una transcripción del audio.", "bot-message");
+      return;
+    }
+
+    // Mostrar la transcripción como mensaje del usuario
+    displayMessage(userMessage, "user-message");
+
+    // Enviar mensaje igual que en enviar()
+    const res = await fetch("/chatbot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje: userMessage }),
+    });
+    const data2 = await res.json();
+    displayMessage(data2.respuesta, "bot-message");
+  } catch (error) {
+    console.error("Error al enviar el audio:", error);
+    displayMessage("Error: No se pudo conectar con el servidor.", "bot-message");
+  }
 }
 
 function displayMessage(message, className) {
