@@ -1,9 +1,10 @@
 import os
 from flask import Flask, request, jsonify, render_template
-import google.generativeai as genai
-from google.generativeai.types.generation_types import GenerationConfig
 from google.api_core import exceptions
 from dotenv import load_dotenv
+
+# La doc oficial importa así el genai, por lo que tuve que adaptar el resto de cosas
+from google import genai
 
 # --- Cargar variables de entorno desde el archivo .env ---
 # Es una mejor práctica de seguridad no tener la clave API directamente en el código.
@@ -19,21 +20,14 @@ try:
     if not api_key:
         print("Error: La variable de entorno GEMINI_API_KEY no está configurada.")
         # Asignamos None para manejar el error en las rutas
-        model = None
+        client = None
     else:
-        genai.configure(api_key=api_key)
-        # CORRECCIÓN: Se instancia el modelo específico que se va a usar.
-        # El system_instruction se define al crear el modelo.
-        system_instruction = "Eres un asistente virtual amigable, útil y conciso. Responde siempre en español."
-        model = genai.GenerativeModel(
-            model_name='gemini-2.5-flash',
-            system_instruction=system_instruction
-        )
+        client = genai.Client(api_key=api_key)
         print("Modelo de Gemini inicializado con éxito.")
 
 except Exception as e:
     print(f"Error al inicializar el cliente de Gemini: {e}")
-    model = None
+    client = None
 
 # --- Rutas de la Aplicación ---
 
@@ -45,7 +39,7 @@ def index():
 @app.route("/chatbot", methods=["POST"])
 def chatbot():
     # 1. Verificar si el modelo se inicializó correctamente
-    if not model:
+    if not client:
         respuesta = "Lo siento, el servicio de IA no está configurado correctamente. Revisa la clave API en el servidor."
         return jsonify({"respuesta": respuesta}), 500
 
@@ -58,13 +52,14 @@ def chatbot():
         return jsonify({"respuesta": "Por favor, escribe un mensaje."})
 
     try:
-        # 4. Llamada a la API de Gemini (usando el modelo ya instanciado)
-        # CORRECCIÓN: La forma de llamar a la API ha sido actualizada a la sintaxis correcta.
-        # El contenido se pasa como una lista.
-        response = model.generate_content([user_message])
-        
+        # 4. Llamada a la API de Gemini
+        system_instruction = "Eres un asistente virtual amigable, útil y conciso. Responde siempre en español."
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[f"{system_instruction}\nUsuario: {user_message}\nAsistente:"],
+        )
+
         # 5. Extraer el texto de la respuesta
-        # CORRECCIÓN: Se accede al texto a través de `response.text`
         respuesta = response.text.strip()
 
     except exceptions.GoogleAPICallError as e:
@@ -74,6 +69,51 @@ def chatbot():
     except Exception as e:
         print(f"Error inesperado al generar contenido: {e}")
         respuesta = "Lo siento, ocurrió un error interno inesperado."
+
+    return jsonify({"respuesta": respuesta})
+
+@app.route("/speech-to-text", methods=["POST"])
+def speech_to_text():
+    if 'audio' not in request.files:
+        return jsonify({"respuesta": "Faltan parámetros: se requiere un archivo de audio."}), 400
+
+    audio_file = request.files['audio']
+
+    if audio_file.filename == '':
+        return jsonify({"respuesta": "No se seleccionó ningún archivo de audio."}), 400
+
+    try:
+        # Guardar el archivo temporalmente
+        temp_audio_path = "temp_audio.mp3"
+        audio_file.save(temp_audio_path)
+
+        # Subir el archivo a la API de Gemini
+        myfile = client.files.upload(file=temp_audio_path)
+
+        # Crear el prompt para la transcripción
+        prompt = "Genera una transcripción del contenido del audio."
+
+        # Llamar al modelo de Gemini para procesar el archivo
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[prompt, myfile]
+        )
+
+        # Extraer la respuesta
+        respuesta = response.text.strip()
+
+    except exceptions.GoogleAPICallError as e:
+        print(f"Error de la API de Gemini: {e}")
+        respuesta = "Hubo un problema al contactar la API de Gemini. Inténtalo de nuevo más tarde."
+    
+    except Exception as e:
+        print(f"Error inesperado al procesar el archivo de audio: {e}")
+        respuesta = "Lo siento, ocurrió un error interno inesperado."
+
+    finally:
+        # Eliminar el archivo temporal
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
 
     return jsonify({"respuesta": respuesta})
 

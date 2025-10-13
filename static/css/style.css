@@ -41,7 +41,7 @@ body {
 }
 
 input[type="text"] {
-  width: calc(100% - 70px);
+  width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -49,11 +49,18 @@ input[type="text"] {
 }
 
 button {
-  width: 60px;
+  width: fit-content;
   padding: 10px;
   background-color: #5cb85c;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+#button-box {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  gap: 0.5rem;
 }
