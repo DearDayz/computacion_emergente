@@ -1,25 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Chatbot Flask</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
-  </head>
-  <body>
-    <div id="chatbox">
-      <h2>Chatbot Flask</h2>
-      <div id="messages"></div>
-      <input id="input" type="text" placeholder="Escribe algo..." />
-      <div id="button-box">
-        <button class="record">Grabar</button>
-        <button class="stop">Detener</button>
-        <button onclick="enviar()">Enviar</button>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSN Bot - Conversación</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Tahoma:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="msn-window">
+    <!-- Barra de título clásica de MSN -->
+    <div class="title-bar">
+      <div class="title-info">
+        <div class="bot-avatar">🤖</div>
+        <div class="title-text">
+          <span class="contact-name">MSN Bot</span>
+          <span class="status">En línea</span>
+        </div>
+      </div>
+      <div class="window-controls">
+        <button class="control-btn minimize">_</button>
+        <button class="control-btn maximize">□</button>
+        <button class="control-btn close">✕</button>
       </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-  </body>
+    <!-- Área de conversación -->
+    <div class="conversation-area">
+      <div id="messages" class="messages-container">
+        <div class="system-message">
+          <span class="timestamp">[${new Date().toLocaleTimeString()}]</span>
+          MSN Bot se ha conectado al chat
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de estado -->
+    <div class="status-bar">
+      <div class="typing-indicator" id="typing-indicator" style="display: none;">
+        <span class="contact-name">MSN Bot</span> está escribiendo...
+      </div>
+    </div>
+
+    <!-- Área de entrada -->
+    <div class="input-area">
+      <div class="input-row">
+        <input type="text" id="messageInput" class="message-input" placeholder="Escribir un mensaje..."
+          maxlength="1000" />
+        <div class="input-controls">
+          <button class="voice-btn" id="recordBtn" title="Grabar mensaje de voz">
+            🎤
+          </button>
+          <button class="voice-btn" id="stopBtn" title="Detener grabación" style="display: none;">
+            ⏹️
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            Enviar
+          </button>
+        </div>
+      </div>
+      <div class="recording-status" id="recordingStatus" style="display: none;">
+        <span class="recording-dot">●</span>
+        Grabando mensaje de voz... Haz clic en "Detener" para terminar
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+
 </html>

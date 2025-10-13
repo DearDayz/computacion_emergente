@@ -1,66 +1,386 @@
+/* === MSN Messenger Classic Styles === */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Tahoma', Arial, sans-serif;
+  font-size: 11px;
+  background: #c3d9ff;
+  background: linear-gradient(135deg, #c3d9ff 0%, #6bb6ff 50%, #3689e6 100%);
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  margin: 0;
-  background-color: #f4f4f9;
-}
-
-#chatbox {
-  width: 400px;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
   padding: 20px;
 }
 
-#messages {
-  border: 1px solid #ccc;
-  height: 300px;
-  overflow-y: scroll;
+/* === Ventana Principal === */
+.msn-window {
+  width: 450px;
+  height: 600px;
+  background: #ffffff;
+  border: 2px solid #316ac5;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* === Barra de Título === */
+.title-bar {
+  background: linear-gradient(to bottom, #4a90e2 0%, #316ac5 50%, #1e3a5f 100%);
+  height: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+  border-bottom: 1px solid #1e3a5f;
+}
+
+.title-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bot-avatar {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.title-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.contact-name {
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.status {
+  color: #b3d9ff;
+  font-size: 9px;
+}
+
+.window-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.control-btn {
+  width: 16px;
+  height: 14px;
+  background: linear-gradient(to bottom, #5a9ae5 0%, #316ac5 100%);
+  border: 1px solid #1e3a5f;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+
+.control-btn:hover {
+  background: linear-gradient(to bottom, #6aa5e8 0%, #4273c8 100%);
+}
+
+.control-btn.close:hover {
+  background: linear-gradient(to bottom, #ff6b6b 0%, #d63447 100%);
+}
+
+/* === Área de Conversación === */
+.conversation-area {
+  flex: 1;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+}
+
+.messages-container {
+  height: 100%;
+  overflow-y: auto;
   padding: 10px;
-  margin-bottom: 10px;
+  background: #ffffff;
+}
+
+/* === Mensajes === */
+.system-message {
+  text-align: center;
+  color: #666666;
+  font-size: 10px;
+  margin: 5px 0;
+  font-style: italic;
+}
+
+.timestamp {
+  color: #999999;
+  font-size: 9px;
 }
 
 .message {
-  padding: 5px;
-  margin-bottom: 5px;
-  border-radius: 5px;
+  margin: 8px 0;
+  line-height: 1.4;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .user-message {
   text-align: right;
-  background-color: #dcf8c6;
+}
+
+.user-message .message-bubble {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #90caf9;
+  color: #1565c0;
+  display: inline-block;
+  max-width: 70%;
+  padding: 6px 10px;
+  border-radius: 12px 12px 4px 12px;
+  margin-left: auto;
+  word-wrap: break-word;
 }
 
 .bot-message {
   text-align: left;
-  background-color: #e8e8e8;
 }
 
-input[type="text"] {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
+.bot-message .message-bubble {
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 1px solid #d0d0d0;
+  color: #333333;
+  display: inline-block;
+  max-width: 70%;
+  padding: 6px 10px;
+  border-radius: 12px 12px 12px 4px;
+  word-wrap: break-word;
 }
 
-button {
-  width: fit-content;
-  padding: 10px;
-  background-color: #5cb85c;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.message-time {
+  font-size: 9px;
+  color: #999999;
+  margin: 2px 5px;
 }
 
-#button-box {
+/* === Barra de Estado === */
+.status-bar {
+  height: 20px;
+  background: #f0f0f0;
+  border-top: 1px solid #d0d0d0;
   display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.typing-indicator {
+  color: #666666;
+  font-style: italic;
+  animation: typingPulse 1.5s infinite;
+}
+
+@keyframes typingPulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* === Área de Entrada === */
+.input-area {
+  background: #f8f8f8;
+  border-top: 1px solid #d0d0d0;
+  padding: 8px;
+}
+
+.input-row {
+  display: flex;
+  gap: 5px;
+  align-items: stretch;
+}
+
+.message-input {
+  flex: 1;
+  height: 32px;
+  border: 2px solid #c0c0c0;
+  border-radius: 3px;
+  padding: 0 8px;
+  font-family: 'Tahoma', Arial, sans-serif;
+  font-size: 11px;
+  outline: none;
+  background: #ffffff;
+}
+
+.message-input:focus {
+  border-color: #316ac5;
+  box-shadow: 0 0 3px rgba(49, 106, 197, 0.3);
+}
+
+.input-controls {
+  display: flex;
+  gap: 3px;
+}
+
+.voice-btn {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(to bottom, #f0f0f0 0%, #d8d8d8 100%);
+  border: 1px solid #a0a0a0;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 10px;
-  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.voice-btn:hover {
+  background: linear-gradient(to bottom, #f5f5f5 0%, #e0e0e0 100%);
+}
+
+.voice-btn:active {
+  background: linear-gradient(to bottom, #d8d8d8 0%, #c8c8c8 100%);
+  transform: translateY(1px);
+}
+
+.send-btn {
+  height: 32px;
+  padding: 0 12px;
+  background: linear-gradient(to bottom, #4a90e2 0%, #316ac5 100%);
+  border: 1px solid #1e3a5f;
+  border-radius: 3px;
+  color: #ffffff;
+  font-family: 'Tahoma', Arial, sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-btn:hover {
+  background: linear-gradient(to bottom, #5a9ae5 0%, #4273c8 100%);
+}
+
+.send-btn:active {
+  background: linear-gradient(to bottom, #316ac5 0%, #1e3a5f 100%);
+  transform: translateY(1px);
+}
+
+.send-btn:disabled {
+  background: linear-gradient(to bottom, #cccccc 0%, #aaaaaa 100%);
+  color: #666666;
+  cursor: not-allowed;
+  border-color: #999999;
+}
+
+/* === Estado de Grabación === */
+.recording-status {
+  margin-top: 5px;
+  padding: 5px 8px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.recording-dot {
+  color: #dc3545;
+  font-size: 12px;
+  animation: recordingBlink 1s infinite;
+}
+
+@keyframes recordingBlink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0.3;
+  }
+}
+
+/* === Scrollbar Personalizada === */
+.messages-container::-webkit-scrollbar {
+  width: 16px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-left: 1px solid #d0d0d0;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #c0c0c0 0%, #a0a0a0 100%);
+  border: 1px solid #808080;
+  border-radius: 2px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #b0b0b0 0%, #909090 100%);
+}
+
+/* === Efectos y Animaciones === */
+.msn-window {
+  animation: windowSlideIn 0.4s ease-out;
+}
+
+@keyframes windowSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* === Responsivo === */
+@media (max-width: 500px) {
+  .msn-window {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  body {
+    padding: 0;
+  }
 }
