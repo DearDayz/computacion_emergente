@@ -1,3 +1,11 @@
 env/
 *.keras 
 .venv
+
+venv310
+venv311
+venv312
+venv313
+
+
+happy vs sad/venv
