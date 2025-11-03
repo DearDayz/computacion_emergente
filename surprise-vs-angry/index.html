@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Surprise vs Angry - Demo</title>
+    <style>
+      body {
+        font-family: Segoe UI, Arial, Helvetica, sans-serif;
+        max-width: 900px;
+        margin: 36px auto;
+        color: #222;
+        background: linear-gradient(
+            rgba(255, 255, 255, 0.7),
+            rgba(255, 255, 255, 0.7)
+          ),
+          url(./assets/intensamente.jpeg) center;
+      }
+      h1 {
+        text-align: center;
+      }
+      p {
+        font-size: 20px;
+      }
+      .card {
+        background: #f7f7f8;
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .preview {
+        max-width: 320px;
+        max-height: 320px;
+        border: 1px solid #ddd;
+        padding: 6px;
+        background: #fff;
+      }
+      .controls {
+        margin-top: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      button {
+        background: green;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 22px;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .result {
+        margin-top: 14px;
+        width: 700px;
+      }
+      .bar {
+        height: 14px;
+        background: #e6e6e6;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        background: #1177ff;
+        transition: width 300ms;
+      }
+      .prob {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Clasificador: surprise vs angry</h1>
+    <div class="card">
+      <p>Selecciona una imagen y pulsa "Predecir".</p>
+      <input id="fileInput" type="file" accept="image/*" />
+      <div class="controls">
+        <img
+          id="preview"
+          class="preview"
+          src=""
+          alt="Preview"
+          style="display: none"
+        />
+        <div>
+          <button id="predictBtn" disabled>Predecir</button>
+          <div
+            id="status"
+            style="margin-top: 8px; color: #666; font-size: 0.9rem"
+          ></div>
+        </div>
+      </div>
+
+      <div id="result" class="result" style="display: none">
+        <h3>Resultado</h3>
+        <div><span class="prob" id="predText"></span></div>
+        <div style="margin-top: 8px">
+          <div>angry <span id="pAngryText" style="float: right">0%</span></div>
+          <div class="bar" aria-hidden="true">
+            <div
+              id="pAngry"
+              class="bar-fill"
+              style="width: 0%; background: #ff4d4d"
+            ></div>
+          </div>
+          <div style="height: 8px"></div>
+          <div>
+            surprise <span id="pSurpriseText" style="float: right">0%</span>
+          </div>
+          <div class="bar" aria-hidden="true">
+            <div id="pSurprise" class="bar-fill" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById("fileInput");
+      const preview = document.getElementById("preview");
+      const predictBtn = document.getElementById("predictBtn");
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+      const predText = document.getElementById("predText");
+      const pAngry = document.getElementById("pAngry");
+      const pSurprise = document.getElementById("pSurprise");
+      const pAngryText = document.getElementById("pAngryText");
+      const pSurpriseText = document.getElementById("pSurpriseText");
+
+      let currentFile = null;
+      fileInput.addEventListener("change", (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        currentFile = f;
+        const url = URL.createObjectURL(f);
+        preview.src = url;
+        preview.style.display = "block";
+        predictBtn.disabled = false;
+        result.style.display = "none";
+        status.textContent = "";
+      });
+
+      predictBtn.addEventListener("click", async () => {
+        if (!currentFile) return;
+        predictBtn.disabled = true;
+        status.textContent = "Enviando imagen...";
+        result.style.display = "none";
+
+        const form = new FormData();
+        form.append("image", currentFile);
+
+        try {
+          const resp = await fetch("/predict", { method: "POST", body: form });
+          if (!resp.ok) throw new Error("Error del servidor: " + resp.status);
+          const data = await resp.json();
+          status.textContent = "Hecho";
+          const pAng = Math.round((data.probabilities.angry || 0) * 100);
+          const pSur = Math.round((data.probabilities.surprise || 0) * 100);
+          predText.textContent = `Predicción: ${data.predicted}`;
+          pAngry.style.width = pAng + "%";
+          pSurprise.style.width = pSur + "%";
+          pAngryText.textContent = pAng + "%";
+          pSurpriseText.textContent = pSur + "%";
+          result.style.display = "block";
+        } catch (err) {
+          status.textContent = "Error: " + err.message;
+        } finally {
+          predictBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

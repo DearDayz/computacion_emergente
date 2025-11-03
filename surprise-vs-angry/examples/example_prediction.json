@@ -1,0 +1,8 @@
+{
+  "image": "examples\\example_input.png",
+  "probabilities": {
+    "angry": 0.9526641592383385,
+    "surprise": 0.04733584076166153
+  },
+  "raw_score": 0.04733584076166153
+}
