@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prueba Chatbot</title>
+    <style>
+      body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; padding: 20px; }
+      #mensaje { width: 60%; padding: 6px; }
+      #enviar { padding: 6px 10px; }
+      #respuesta { margin-top: 12px; color: #1a73e8; }
+    </style>
+  </head>
+  <body>
+    <h1>Prueba chatbot (sencillo)</h1>
+    <p>Escribe un mensaje y haz clic en <strong>Enviar</strong> (o presiona Enter).</p>
+
+    <label for="mensaje">Mensaje:</label>
+    <input id="mensaje" type="text" placeholder="Hola, ¿cómo estás?" />
+    <button id="enviar">Enviar</button>
+
+    <div id="respuesta" aria-live="polite"></div>
+
+    <script>
+      const input = document.getElementById('mensaje');
+      const btn = document.getElementById('enviar');
+      const out = document.getElementById('respuesta');
+
+      async function sendMessage() {
+        const texto = input.value.trim();
+        if (!texto) {
+          out.textContent = 'Escribe un mensaje antes de enviar.';
+          return;
+        }
+        out.textContent = 'Enviando...';
+        try {
+          const resp = await fetch('/chatbot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mensaje: texto })
+          });
+          const data = await resp.json();
+          // El app.py existente devuelve la clave con posible espacio "respuesta "
+          const respuesta = data.respuesta ?? data['respuesta '] ?? JSON.stringify(data);
+          out.textContent = 'Respuesta: ' + respuesta;
+        } catch (err) {
+          out.textContent = 'Error al enviar: ' + err.message;
+        }
+      }
+
+      btn.addEventListener('click', sendMessage);
+      input.addEventListener('keyup', (e) => { if (e.key === 'Enter') sendMessage(); });
+    </script>
+  </body>
+</html>
