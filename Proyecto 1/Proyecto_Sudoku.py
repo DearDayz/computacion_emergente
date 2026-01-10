@@ -1,6 +1,7 @@
 import random
 import copy
 import pandas as pd
+import matplotlib.pyplot as plt
 
 class SolucionadorSudokuGenetico:
     """
@@ -155,11 +156,76 @@ class SolucionadorSudokuGenetico:
                 
         return mejor_actual
 
+    def _inicializar_visualizacion(self):
+        plt.ion()
+        self.fig, (self.ax_tablero, self.ax_fitness) = plt.subplots(1, 2, figsize=(12, 6))
+        self.historial_fitness = []
+        self.eje_x = []
+        
+        # Configurar gráfico de fitness
+        self.linea_fitness, = self.ax_fitness.plot([], [], 'b-')
+        self.ax_fitness.set_title("Evolución del Fitness (Errores)")
+        self.ax_fitness.set_xlabel("Generación")
+        self.ax_fitness.set_ylabel("Penalización")
+        self.ax_fitness.grid(True)
+        
+        # Configurar tablero visual
+        self.ax_tablero.set_title("Mejor Individuo Actual")
+        self.ax_tablero.axis('off')
+        
+        # Dibujar lineas de la grilla
+        for i in range(10):
+            lw = 2 if i % 3 == 0 else 0.5
+            # Matplotlib coordenadas 0..1
+            self.ax_tablero.axhline(i/9, color='black', linewidth=lw)
+            self.ax_tablero.axvline(i/9, color='black', linewidth=lw)
+            
+        self.textos_tablero = [[None for _ in range(9)] for _ in range(9)]
+        # Inicializar textos vacíos
+        for f in range(9):
+            for c in range(9):
+                # Coordenadas: x va de izq a derecha, y de abajo a arriba.
+                # Queremos f=0 arriba (y=1), f=8 abajo (y=0).
+                x = (c + 0.5) / 9
+                y = 1 - (f + 0.5) / 9
+                
+                # Diferenciar color para celdas fijas
+                es_fija = (f, c) in self.celdas_fijas
+                color = 'blue' if es_fija else 'black'
+                weight = 'bold' if es_fija else 'normal'
+                
+                self.textos_tablero[f][c] = self.ax_tablero.text(
+                    x, y, '', 
+                    ha='center', va='center', 
+                    fontsize=12, color=color, weight=weight
+                )
+
+    def _actualizar_graficos(self, generacion, mejor_individuo_df, score):
+        # Actualizar gráfica de fitness
+        self.historial_fitness.append(score)
+        self.eje_x.append(generacion)
+        
+        self.linea_fitness.set_data(self.eje_x, self.historial_fitness)
+        self.ax_fitness.relim()
+        self.ax_fitness.autoscale_view()
+        
+        # Actualizar números en tablero
+        for f in range(9):
+            for c in range(9):
+                val = mejor_individuo_df.iloc[f, c]
+                self.textos_tablero[f][c].set_text(str(val))
+        
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        plt.pause(0.001)
+
     def resolver_problema(self):
         """Ejecuta el ciclo evolutivo principal."""
         print("Generando población inicial...")
         # 1. Población inicial
         self.poblacion = [self._generar_tablero_valido_filas() for _ in range(self.tam_poblacion)]
+
+        self._inicializar_visualizacion()
         
         print("Iniciando evolución...")
         for g in range(self.max_generaciones):
@@ -168,6 +234,8 @@ class SolucionadorSudokuGenetico:
             
             mejor_individuo = self.poblacion[0]
             score_mejor = self.calcular_penalizacion(mejor_individuo)
+
+            self._actualizar_graficos(g, mejor_individuo, score_mejor)
             
             # Condición de parada exitosa
             if score_mejor == 0:
@@ -248,3 +316,7 @@ if __name__ == "__main__":
     # Dado que mejor_solucion ya es una lista de listas (no un DF), creamos un DF temporal
     score_final = motor.calcular_penalizacion(pd.DataFrame(mejor_solucion))
     print(f"\n Fitness final (0 es perfecto): {score_final}")
+
+    print("\nVisualización finalizada. Cierre la ventana gráfica para salir.")
+    plt.ioff()
+    plt.show()
