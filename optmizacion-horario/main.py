@@ -47,6 +47,9 @@ MUTATION_LOW = 0.15
 MUTATION_HIGH = 0.3
 LOCAL_SEARCH_ATTEMPTS = 50
 
+# Semilla aleatoria para reproducibilidad; poner `None` para comportamiento no determinista
+RANDOM_SEED = 42
+
 # Opcional: activar uso de preferencias difusas (0.0 a 1.0)
 USE_FUZZY_PREFERENCES = True
 
@@ -433,6 +436,10 @@ if __name__ == "__main__":
     
     total_bloques_necesarios = sum(m.horas_semanales for m in MATERIAS)
     print(f"- {total_bloques_necesarios} bloques de clase necesarios")
+    # Inicializar semilla aleatoria (reproducible si RANDOM_SEED no es None)
+    if RANDOM_SEED is not None:
+        random.seed(RANDOM_SEED)
+        print(f"Semilla aleatoria fijada a: {RANDOM_SEED}")
     
     # Generar horario inicial con conflictos
     print("\n" + "="*80)
