@@ -9,3 +9,7 @@ venv313
 
 
 happy vs sad/venv
+
+# Python
+__pycache__/
+*.pyc
