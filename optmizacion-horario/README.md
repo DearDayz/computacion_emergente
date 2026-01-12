@@ -12,10 +12,11 @@ Este sistema resuelve el problema NP-completo de asignación de horarios académ
 
 ## Características Principales
 
-- **Algoritmo Genético Híbrido**: Combina operadores genéticos clásicos con búsqueda local
+- **Algoritmo Genético Híbrido**: Operadores genéticos + búsqueda local
 - **Restricciones Duras y Blandas**: Sistema flexible de penalizaciones
 - **Visualización Completa**: Muestra horarios antes y después de la optimización
 - **Análisis de Conflictos**: Identifica y cuantifica todos los problemas
+- **Preferencias Difusas (opcionales)**: Soporte para grados de preferencia [0.0–1.0]
 
 ## Requisitos
 
@@ -93,16 +94,18 @@ AULAS = [
 
 ### Ajustar Parámetros
 
-Modifica las constantes al inicio del algoritmo:
+Modifica las constantes al inicio de `main.py`:
 
 ```python
-# En la función algoritmo_genetico()
-poblacion = [crear_individuo() for _ in range(200)]  # tamaño población
-for generacion in range(1000):  # generaciones máximas
-    nueva_poblacion = poblacion[:10]  # elitismo
-    # ...
-    mutar(hijo, prob=0.2)  # probabilidad de mutación
-    hijo = busqueda_local(hijo, intentos=30)  # intentos búsqueda local
+POPULATION_SIZE = 300
+GENERATIONS = 2000
+ELITISM = 20
+MUTATION_LOW = 0.15
+MUTATION_HIGH = 0.3
+LOCAL_SEARCH_ATTEMPTS = 50
+
+# Opcional: activar preferencias difusas
+USE_FUZZY_PREFERENCES = False
 ```
 
 ## Estructura del Proyecto
@@ -111,7 +114,8 @@ for generacion in range(1000):  # generaciones máximas
 proyecto final/
 ├── main.py              # Código principal del sistema
 ├── DOCUMENTACION.md     # Documentación técnica completa
-└── README.md           # Este archivo
+├── EJEMPLO_VISUAL.md    # Ejemplo visual antes/después
+└── README.md            # Este archivo
 ```
 
 ## Archivos Incluidos
@@ -154,9 +158,9 @@ Penalizaciones por:
 
 ### 3. Operadores Genéticos
 - **Selección**: Torneo de 3 individuos
-- **Cruce**: Un punto con ajuste de cantidad de bloques
-- **Mutación**: Cambio aleatorio de día, hora o aula (20%)
-- **Elitismo**: Preserva los 10 mejores individuos
+- **Cruce**: Uniforme por materia, conservando cantidad de bloques
+- **Mutación**: Cambio aleatorio de día, hora o aula (probabilidad adaptativa)
+- **Elitismo**: Preserva los mejores individuos (configurable)
 
 ### 4. Búsqueda Local
 Refinamiento mediante 30 intentos de mejora local por cada hijo generado.
@@ -213,12 +217,12 @@ Violaciones de preferencias: 0
 Proceso completado!
 ```
 
-## Rendimiento
+## Rendimiento (referencial)
 
-- **Tamaño población**: 200 individuos
-- **Generaciones típicas**: 100-500 (depende de la complejidad)
-- **Tiempo de ejecución**: 10-60 segundos (según hardware)
-- **Tasa de éxito**: >95% encuentra solución óptima
+- **Tamaño población**: por defecto 300 individuos
+- **Generaciones típicas**: 200–2000 (según complejidad y parámetros)
+- **Tiempo de ejecución**: variable según hardware y configuración
+- **Tasa de éxito**: alta en problemas como el ejemplo provisto
 
 ## Ventajas del Sistema
 
@@ -229,7 +233,7 @@ Proceso completado!
 
 ## Extensiones Posibles
 
-- Implementar lógica difusa para preferencias graduales
+- Implementar lógica difusa para preferencias graduales (incluida de forma opcional)
 - Agregar restricciones de capacidad de aulas
 - Considerar prerequisitos entre materias
 - Optimización multi-objetivo (varios criterios simultáneos)

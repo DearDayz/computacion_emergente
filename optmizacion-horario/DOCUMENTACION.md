@@ -70,23 +70,23 @@ Este sistema implementa un **AG Híbrido** que combina:
 1. **Operadores genéticos clásicos** (selección, cruce, mutación)
 2. **Búsqueda local** para refinamiento de soluciones
 
-La búsqueda local intenta mejorar cada hijo generado mediante cambios locales iterativos, lo que acelera la convergencia hacia soluciones óptimas.
+La búsqueda local intenta mejorar cada hijo generado mediante cambios locales iterativos, lo que acelera la convergencia hacia soluciones óptimas. En este proyecto se utiliza una cantidad de intentos configurable.
 
 ### 2.4 Flujo del Algoritmo
 
 ```
-1. Generar población inicial aleatoria (200 individuos)
-2. MIENTRAS no se encuentre solución perfecta Y generaciones < 1000:
+1. Generar población inicial aleatoria (por defecto 300 individuos)
+2. MIENTRAS no se encuentre solución perfecta Y generaciones < parámetro configurado (por defecto 2000):
    a. Evaluar fitness de todos los individuos
    b. Ordenar población por fitness (mejor primero)
    c. Si fitness del mejor = 0: SOLUCIÓN ENCONTRADA
    d. Crear nueva población:
-      - Mantener 10 mejores (elitismo)
+      - Mantener los mejores según parámetro `ELITISM` (por defecto 20)
       - Hasta completar 200 individuos:
         * Seleccionar dos padres por torneo
         * Cruzar padres para crear hijo
-        * Mutar hijo con probabilidad 20%
-        * Aplicar búsqueda local al hijo
+        * Mutar hijo con probabilidad adaptativa (mayor si el fitness es alto)
+        * Aplicar búsqueda local al hijo (intentos configurables)
         * Agregar hijo a nueva población
    e. Reemplazar población antigua con nueva
    f. Mostrar progreso cada 50 generaciones
@@ -235,14 +235,13 @@ def seleccion(poblacion):
 - Mantiene diversidad
 - Presión selectiva ajustable
 
-### 5.2 Cruce de Un Punto con Ajuste
+### 5.2 Cruce Uniforme por Materia
 ```python
 def cruzar(padre1, padre2):
-    1. Elegir punto de corte aleatorio
-    2. hijo = padre1[:punto] + padre2[punto:]
-    3. Ajustar hijo para mantener horas correctas por materia
-    4. Si faltan bloques, agregar nuevos aleatorios
-    5. Si sobran bloques, eliminar excedentes
+  1. Agrupar bloques por materia en ambos padres
+  2. Para cada materia, tomar alternadamente bloques de ambos padres
+  3. Mantener cantidad correcta de bloques por materia
+  4. Si faltan bloques, crear nuevos aleatorios
 ```
 
 **Ejemplo**:
@@ -266,7 +265,7 @@ def mutar(individuo, prob=0.2):
             Si tipo == 2: cambiar aula
 ```
 
-**Probabilidad**: 20% por bloque
+**Probabilidad**: Adaptativa (por defecto 0.15 si el mejor fitness < 50, 0.3 en caso contrario)
 **Efecto**: Introduce diversidad y explora nuevas soluciones
 
 ### 5.4 Búsqueda Local
@@ -288,13 +287,14 @@ def busqueda_local(individuo, intentos=30):
 
 ## 6. PARÁMETROS DEL SISTEMA
 
-| Parámetro | Valor | Justificación |
-|-----------|-------|---------------|
-| Tamaño población | 200 | Balance entre diversidad y tiempo de cómputo |
-| Generaciones máximas | 1000 | Suficiente para convergencia |
-| Elitismo | 10 individuos | 5% de la población, preserva mejores |
-| Probabilidad mutación | 20% | Balance entre exploración y explotación |
-| Intentos búsqueda local | 30 | Refinamiento suficiente sin exceso |
+| Parámetro | Valor por defecto | Descripción |
+|-----------|-------------------|-------------|
+| Tamaño población (`POPULATION_SIZE`) | 300 | Diversidad adecuada |
+| Generaciones máximas (`GENERATIONS`) | 2000 | Límite de convergencia |
+| Elitismo (`ELITISM`) | 20 | Preserva mejores individuos |
+| Prob. mutación baja (`MUTATION_LOW`) | 0.15 | Si el mejor fitness es bajo |
+| Prob. mutación alta (`MUTATION_HIGH`) | 0.3 | Si el mejor fitness es alto |
+| Intentos búsqueda local (`LOCAL_SEARCH_ATTEMPTS`) | 50 | Refinamiento por hijo |
 | Tamaño torneo | 3 | Presión selectiva moderada |
 
 ---
@@ -402,7 +402,7 @@ Martes:
 
 ### 9.1 Lógica Difusa para Preferencias
 
-Implementar conjuntos difusos para preferencias más flexibles:
+Implementación opcional de conjuntos difusos para preferencias más flexibles (activable con `USE_FUZZY_PREFERENCES`):
 
 ```python
 # En lugar de preferencias binarias (sí/no)
@@ -415,7 +415,7 @@ preferencias_difusas = {
 }
 ```
 
-**Beneficio**: Preferencias graduales en lugar de absolutas
+**Beneficio**: Preferencias graduales en lugar de absolutas. Si se activa, la penalización por preferencias se calcula como `5 * (1 - grado)`.
 
 ### 9.2 Restricciones Adicionales
 

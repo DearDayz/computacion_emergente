@@ -229,7 +229,7 @@ Bloque          Lunes        Martes       Miercoles    Jueves       Viernes
 
 AULA B:
 --------------------------------------------------------------------------------
-Bloque          Lunes        Martes       Miercoles    Juernes      Viernes     
+Bloque          Lunes        Martes       Miercoles    Jueves       Viernes     
 --------------------------------------------------------------------------------
 8:00-9:30       ---          ---          ---          Programa     ---         
 9:30-11:00      Bases de D   IA           IA           ---          Programa    

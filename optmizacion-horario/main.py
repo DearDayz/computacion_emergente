@@ -1,6 +1,6 @@
 import random
 from typing import List, Tuple, Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections import defaultdict
 
 # DEFINICION DE ESTRUCTURAS DE DATOS
@@ -17,6 +17,7 @@ class Profesor:
     id: int
     nombre: str
     preferencias_horarias: List[Tuple[int, int]]  # [(dia, bloque), ...]
+    preferencias_difusas: Dict[Tuple[int, int], float] = field(default_factory=dict)  # opcional: (dia, bloque) -> grado [0.0-1.0]
 
 @dataclass
 class Aula:
@@ -37,6 +38,17 @@ class Bloque:
 DIAS = 5  # Lunes a Viernes
 BLOQUES_POR_DIA = 6  # 6 bloques horarios por dia
 TOTAL_BLOQUES = DIAS * BLOQUES_POR_DIA
+
+# Parametros del algoritmo (ajustables)
+POPULATION_SIZE = 300
+GENERATIONS = 2000
+ELITISM = 20
+MUTATION_LOW = 0.15
+MUTATION_HIGH = 0.3
+LOCAL_SEARCH_ATTEMPTS = 50
+
+# Opcional: activar uso de preferencias difusas (0.0 a 1.0)
+USE_FUZZY_PREFERENCES = True
 
 # Datos de ejemplo
 MATERIAS = [
@@ -60,6 +72,25 @@ AULAS = [
 ]
 
 # REPRESENTACION DEL INDIVIDUO
+
+# Preferencias difusas de ejemplo: construir mapa para todos los slots
+def construir_preferencias_difusas():
+    for profesor in PROFESORES:
+        dias_preferidos = {dia for (dia, _bloque) in profesor.preferencias_horarias}
+        mapa: Dict[Tuple[int, int], float] = {}
+        for d in range(DIAS):
+            for b in range(BLOQUES_POR_DIA):
+                if (d, b) in profesor.preferencias_horarias:
+                    grado = 1.0
+                elif d in dias_preferidos:
+                    grado = 0.7
+                else:
+                    grado = 0.3
+                mapa[(d, b)] = grado
+        profesor.preferencias_difusas = mapa
+
+if USE_FUZZY_PREFERENCES:
+    construir_preferencias_difusas()
 
 def crear_individuo() -> List[Bloque]:
     """Crea un horario aleatorio respetando cantidad de horas por materia"""
@@ -108,11 +139,15 @@ def fitness(individuo: List[Bloque]) -> int:
     
     # RESTRICCIONES BLANDAS (peso menor)
     
-    # 3. Preferencias horarias de profesores
+    # 3. Preferencias horarias de profesores (con soporte opcional difuso)
     for bloque in individuo:
         profesor = next(p for p in PROFESORES if p.id == bloque.profesor_id)
-        if (bloque.dia, bloque.bloque) not in profesor.preferencias_horarias:
-            penalizacion += 5
+        if USE_FUZZY_PREFERENCES and profesor.preferencias_difusas:
+            grado = profesor.preferencias_difusas.get((bloque.dia, bloque.bloque), 0.0)
+            penalizacion += int(round(5 * (1.0 - grado)))
+        else:
+            if (bloque.dia, bloque.bloque) not in profesor.preferencias_horarias:
+                penalizacion += 5
     
     # 4. Distribucion equilibrada: evitar muchas clases el mismo dia
     materias_por_dia = defaultdict(lambda: defaultdict(int))
@@ -271,9 +306,9 @@ def busqueda_local(individuo: List[Bloque], intentos: int = 50) -> List[Bloque]:
 
 def algoritmo_genetico():
     """Algoritmo genetico hibrido para optimizacion de horarios"""
-    poblacion = [crear_individuo() for _ in range(300)]
+    poblacion = [crear_individuo() for _ in range(POPULATION_SIZE)]
 
-    for generacion in range(2000):
+    for generacion in range(GENERATIONS):
         poblacion.sort(key=lambda x: fitness(x))
         mejor = poblacion[0]
         fit = fitness(mejor)
@@ -282,20 +317,20 @@ def algoritmo_genetico():
             print(f"\nSolucion encontrada en generacion {generacion}")
             return mejor
 
-        nueva_poblacion = poblacion[:20]  # elitismo aumentado
+        nueva_poblacion = poblacion[:ELITISM]  # elitismo
 
-        while len(nueva_poblacion) < 300:
+        while len(nueva_poblacion) < POPULATION_SIZE:
             p1 = seleccion(poblacion)
             p2 = seleccion(poblacion)
 
             hijo = cruzar(p1, p2)
             
             # Mutacion adaptativa: mas probabilidad si fitness alto
-            prob_mutacion = 0.15 if fit < 50 else 0.3
+            prob_mutacion = MUTATION_LOW if fit < 50 else MUTATION_HIGH
             mutar(hijo, prob=prob_mutacion)
 
             # Busqueda local hibrida intensiva
-            hijo = busqueda_local(hijo, intentos=50)
+            hijo = busqueda_local(hijo, intentos=LOCAL_SEARCH_ATTEMPTS)
 
             nueva_poblacion.append(hijo)
 
